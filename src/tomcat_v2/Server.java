@@ -11,9 +11,11 @@ public class Server {
 
     private static String url = "";
 
-    private Map<String,String> map = new HashMap<>();
+    //存储配置信息
+    private static Map<String,String> map = new HashMap<>();
 
 
+    //静态代码块
     static {
         Properties properties = new Properties();
         try {
@@ -29,7 +31,7 @@ public class Server {
             e.printStackTrace();
         }
     }
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, IllegalAccessException, InstantiationException, ClassNotFoundException {
         ServerSocket serverSocket = null;
         Socket socket = null;
         InputStream is = null;
@@ -44,11 +46,19 @@ public class Server {
                 is = socket.getInputStream();
                 //获取输出流对象
                 ops = socket.getOutputStream();
-
                 //解析请求的资源
                 parset(is);
-                //发送资源
-                send2FontEnd(ops);
+                //判断是不是静态资源
+                if(null != url){
+                    if(url.indexOf(".")!=-1){
+                        //发送静态资源
+                        sendStatic2FontEnd(ops);
+                    }else {
+                        //发送动态资源
+                        sendDynamic2FontEnd(is,ops);
+                    }
+                }
+
 
             }
         } catch (IOException e) {
@@ -68,6 +78,30 @@ public class Server {
             }
 
         }
+    }
+
+    private static void sendDynamic2FontEnd(InputStream is, OutputStream ops) throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+        //将响应头 和响应行
+        ops.write("HTTP/1.1 200 OK\n".getBytes());
+        ops.write("Content-Type:text/html;charset=utf-8\n".getBytes());
+        ops.write("Server:Apache-Coyote/1.1\n".getBytes());
+        ops.write("\n".getBytes());
+        ops.flush();
+        //判断map中得key是否保持一致
+        if (map.containsKey(url)){
+            //如匹配。通过反射执行
+            String value = map.get(url);
+            Class clazz = Class.forName(value);
+            Servlet servlet = (Servlet) clazz.newInstance();
+            servlet.init();
+            servlet.Service(is,ops);
+            servlet.destroy();
+        }
+        if (null != ops){
+            ops.close();
+            ops = null;
+        }
+
     }
 
     //获取请求部分，解析客户端访问的资源名称，将这个资源给url
@@ -100,7 +134,7 @@ public class Server {
         System.out.print(url);
     }
 
-    private static void send2FontEnd(OutputStream ops) throws IOException {
+    private static void sendStatic2FontEnd(OutputStream ops) throws IOException {
         byte[] bytes = new byte[2048];
         FileInputStream fis = null;
         try{
