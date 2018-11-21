@@ -30,3 +30,7 @@
 * content-Encoding：本次内容采用的压缩格式
 * content-length：响应内容的长度
 * testserver：响应的服务器类型
+
+## tomcat V1.0
+
+单纯的实现了由服务器返回相关的数据，采用的Socket网络编程以及文件IO，无法执行Java代码
