@@ -29,4 +29,4 @@
 * content-Type：本次响应的内容
 * content-Encoding：本次内容采用的压缩格式
 * content-length：响应内容的长度
-* server：响应的服务器类型
+* testserver：响应的服务器类型
